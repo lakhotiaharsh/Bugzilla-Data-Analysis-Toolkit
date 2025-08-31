@@ -89,12 +89,6 @@ This repository contains a set of Python scripts to **extract, process, classify
    python generateGraph.py
    python metricsComputation.py
 
-## Requirements
-
-    Run the following command to install all the required dependencies:
-    ```bash
-    pip install -r requirements.txt
-
 ## 📊 Example Outputs
 
 - resolved_bugs_comments_2020_2025.csv → List of comments with metadata.
