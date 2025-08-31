@@ -1,40 +1,57 @@
+import re
 import csv
-import json
+import networkx as nx
 from collections import defaultdict
 
-# bug_id -> set of developer IDs
-bug_devs = defaultdict(set)
+# ----------------------------
+# Step 1: Load bug → period mapping
+# ----------------------------
+bug_period = {}
+with open("E:/fyp/bugs_updated_eclipse2.csv", "r", encoding="utf-8") as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        bug_period[int(row["issue.id"])] = int(row["period"])
+print("Load bug → period mapping")
+# ----------------------------
+# Step 2: Parse .mysql file to extract (bug_id, submitted_by)
+# ----------------------------
+bug_devs = defaultdict(set)  # bug_id -> set of developers
 
-# Mapping author names to unique IDs
-author_to_id = {}
-next_id = 1
+pattern = re.compile(
+    r"\((\d+),\s*(\d+),\s*NULL,.*?,\s*(\d+),"
+)  
+# Matches: (id, issue_id, comment_id=NULL, text, submitted_by, ...)
 
-def get_author_id(author_name):
-    global next_id
-    if author_name not in author_to_id:
-        author_to_id[author_name] = next_id
-        next_id += 1
-    return author_to_id[author_name]
+with open("E:/fyp/tickets.mysql", "r", encoding="utf-8") as f:
+    for line in f:
+        for match in pattern.finditer(line):
+            issue_id = int(match.group(2))
+            submitted_by = int(match.group(3))
+            bug_devs[issue_id].add(submitted_by)
+print("Parse .mysql file to extract (bug_id, submitted_by)")
+# ----------------------------
+# Step 3: Build graphs per period
+# ----------------------------
+graphs = {p: nx.Graph() for p in range(1, 6)}
 
-# Load CSV file (bug_id, comment_author)
-def print(period):
-    with open(f"E:/fyp/data_202{period}.csv", "r", encoding="utf-8") as f:
-        reader = csv.DictReader(f)  # assumes first row has headers: bug_id, comment_author
-        for row in reader:
-            bug_id = row.get("bug_id")
-            author_name = row.get("comment_author")
+for bug, devs in bug_devs.items():
+    if bug not in bug_period:
+        continue
+    period = bug_period[bug]
+    G = graphs[period]
 
-            if bug_id and author_name:  # Ensure both exist
-                submitted_by = get_author_id(author_name)
-                bug_devs[bug_id].add(submitted_by)
-
-    # Save author mapping (author -> ID)
-    with open("E:/fyp/author_mapping.json", "w", encoding="utf-8") as f:
-        json.dump(author_to_id, f, indent=4)
-
-    # (Optional) Save bug -> developers mapping
-    with open("E:/fyp/bug_devs.json", "w", encoding="utf-8") as f:
-        json.dump({k: list(v) for k, v in bug_devs.items()}, f, indent=4)
-
-for period in range(1,6):
-    print(period)
+    devs = list(devs)
+    for i in range(len(devs)):
+        for j in range(i + 1, len(devs)):
+            u, v = devs[i], devs[j]
+            if G.has_edge(u, v):
+                G[u][v]["weight"] += 1
+            else:
+                G.add_edge(u, v, weight=1)
+print("Build graphs per period")
+# ----------------------------
+# Step 4: Save graphs as Pajek .net
+# ----------------------------
+for period, G in graphs.items():
+    nx.write_pajek(G, f"period_{period}_eclipse2.net")
+print("Save graphs as Pajek .net files")
