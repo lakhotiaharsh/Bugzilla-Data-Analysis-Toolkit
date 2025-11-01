@@ -13,11 +13,7 @@ This repository contains a set of Python scripts to **extract, process, classify
   - `resolved_bugs_comments_2020_2025.json` (full structured data)
   - `resolved_bugs_comments_2020_2025.csv` (flattened table format for analysis)
 
-- For eclipse and openstack datasets follow the following link
-  - https://drive.google.com/file/d/15Geh0J3FqGrDn5e5d2Z5FKzzysEtfZMr/view?usp=drive_link
-  - https://drive.google.com/file/d/1Lmk_isLzP62y_A1i50XdrDRnDEUGE0Gd/view?usp=drive_link
-
----
+--
 
 ### 2. `parseSQLDump.py`
 - Parses a **MySQL dump** of the Bugzilla database to extract earliest change dates for issues.
